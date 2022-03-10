@@ -5,50 +5,30 @@
 #include "FreeRTOS.h"
 #include "task.h"
 /************************************************
- ALIENTEK 探索者STM32F407开发板 FreeRTOS实验2-1
- FreeRTOS移植实验-库函数版本
- 技术支持：www.openedv.com
- 淘宝店铺：http://eboard.taobao.com 
- 关注微信公众平台微信号："正点原子"，免费获取STM32资料。
- 广州市星翼电子科技有限公司  
- 作者：正点原子 @ALIENTEK
+
 ************************************************/
 
-//任务优先级
-#define START_TASK_PRIO		1
-//任务堆栈大小	
-#define START_STK_SIZE 		128  
-//任务句柄
-TaskHandle_t StartTask_Handler;
-//任务函数
-void start_task(void *pvParameters);
 
-//任务优先级
-#define LED0_TASK_PRIO		2
-//任务堆栈大小	
-#define LED0_STK_SIZE 		50  
-//任务句柄
-TaskHandle_t LED0Task_Handler;
-//任务函数
-void led0_task(void *pvParameters);
+ 
+void start_Task( void * pvParameters );
+char START_T_NAME[] ="start_task"; /*任务名称*/
+#define START_T_SIZE  120
+#define START_T_PIR 	1
+TaskHandle_t start_taskHandle;
 
-//任务优先级
-#define LED1_TASK_PRIO		3
-//任务堆栈大小	
-#define LED1_STK_SIZE 		50  
-//任务句柄
-TaskHandle_t LED1Task_Handler;
-//任务函数
-void led1_task(void *pvParameters);
+void task1_Task( void * pvParameters );
+char TASK1_T_NAME[] ="task1_task"; 
+#define TASK1_T_SIZE  120
+#define TASK1_T_PIR 	2
+TaskHandle_t task1_taskHandle;
 
-//任务优先级
-#define FLOAT_TASK_PRIO		4
-//任务堆栈大小	
-#define FLOAT_STK_SIZE 		128
-//任务句柄
-TaskHandle_t FLOATTask_Handler;
-//任务函数
-void float_task(void *pvParameters);
+
+void task2_Task( void * pvParameters );
+char TASK2_T_NAME[] ="task2_task"; 
+#define TASK2_T_SIZE  120
+#define TASK2_T_PIR 	3
+TaskHandle_t task2_taskHandle;
+ 
 
 int main(void)
 { 
@@ -57,77 +37,84 @@ int main(void)
 	uart_init(115200);     	//初始化串口
 	LED_Init();		        //初始化LED端口
 	
-	//创建开始任务
-    xTaskCreate((TaskFunction_t )start_task,            //任务函数
-                (const char*    )"start_task",          //任务名称
-                (uint16_t       )START_STK_SIZE,        //任务堆栈大小
-                (void*          )NULL,                  //传递给任务函数的参数
-                (UBaseType_t    )START_TASK_PRIO,       //任务优先级
-                (TaskHandle_t*  )&StartTask_Handler);   //任务句柄              
-    vTaskStartScheduler();          //开启任务调度
+	/*创建开始任务*/
+	xTaskCreate((TaskFunction_t				 ) start_Task,
+							(char *        				 ) START_T_NAME, 
+							(configSTACK_DEPTH_TYPE) START_T_SIZE,
+							(void *								 )NULL,
+							(UBaseType_t					 ) START_T_PIR,
+							(TaskHandle_t *				 )  &start_taskHandle);	     
+
+	
+   vTaskStartScheduler();          //开启任务调度
 }
  
-//开始任务任务函数
-void start_task(void *pvParameters)
+
+
+
+/*
+* start_Task function
+*
+***************/
+ void start_Task( void * pvParameters )
 {
-    taskENTER_CRITICAL();           //进入临界区
-    //创建LED0任务
-    xTaskCreate((TaskFunction_t )led0_task,     	
-                (const char*    )"led0_task",   	
-                (uint16_t       )LED0_STK_SIZE, 
-                (void*          )NULL,				
-                (UBaseType_t    )LED0_TASK_PRIO,	
-                (TaskHandle_t*  )&LED0Task_Handler);   
-    //创建LED1任务
-    xTaskCreate((TaskFunction_t )led1_task,     
-                (const char*    )"led1_task",   
-                (uint16_t       )LED1_STK_SIZE, 
-                (void*          )NULL,
-                (UBaseType_t    )LED1_TASK_PRIO,
-                (TaskHandle_t*  )&LED1Task_Handler);        
-    //浮点测试任务
-    xTaskCreate((TaskFunction_t )float_task,     
-                (const char*    )"float_task",   
-                (uint16_t       )FLOAT_STK_SIZE, 
-                (void*          )NULL,
-                (UBaseType_t    )FLOAT_TASK_PRIO,
-                (TaskHandle_t*  )&FLOATTask_Handler);  
-    vTaskDelete(StartTask_Handler); //删除开始任务
-    taskEXIT_CRITICAL();            //退出临界区
-}
+ 
+      /*创建任务1*/
+			xTaskCreate((TaskFunction_t				 ) task1_Task,
+									(char *        				 ) TASK1_T_NAME, 
+									(configSTACK_DEPTH_TYPE) TASK1_T_SIZE,
+									(void *								 )NULL,
+									(UBaseType_t					 ) TASK1_T_PIR,
+									(TaskHandle_t *				 ) &task1_taskHandle);	  
+			
+			/*创建任务2*/
+			xTaskCreate((TaskFunction_t				 ) task2_Task,
+						(char *        				 ) TASK2_T_NAME, 
+						(configSTACK_DEPTH_TYPE) TASK2_T_SIZE,
+						(void *								 )NULL,
+						(UBaseType_t					 ) TASK2_T_PIR,
+						(TaskHandle_t *				 ) &task2_taskHandle);	  
+					
+			
+			/*删除本任务*/
+			vTaskDelete(start_taskHandle);			
+			
+ }
 
-//LED0任务函数 
-void led0_task(void *pvParameters)
-{
-    while(1)
-    {
-        LED0=~LED0;
-        vTaskDelay(500);
-    }
-}   
-
-//LED1任务函数
-void led1_task(void *pvParameters)
-{
-    while(1)
-    {
-        LED1=0;
-        vTaskDelay(200);
-        LED1=1;
-        vTaskDelay(800);
-    }
-}
-
-//浮点测试任务
-void float_task(void *pvParameters)
-{
-	static float float_num=0.00;
-	while(1)
-	{
-		float_num+=0.01f;
-		printf("float_num的值为: %.4f\r\n",float_num);
-        vTaskDelay(1000);
-	}
-}
-
-
+ 
+ 
+ void task1_Task( void * pvParameters )
+ {
+		int task1_num = 0;
+		for(;;)
+		{
+				task1_num++;
+			  printf("task1_num =%d\n",task1_num);
+				if(task1_num == 5)
+				{
+					if(task2_taskHandle != NULL)
+					{
+						vTaskDelete(task2_taskHandle);
+					}						
+				}
+				LED0 =~LED0;
+				vTaskDelay(500);
+				
+		}
+ }
+ 
+  void task2_Task( void * pvParameters )
+ {
+		int task2_num = 0;
+		for(;;)
+		{
+				task2_num++;
+				printf("task2_num =%d\n",task2_num);
+			  LED1 = 1;
+			  vTaskDelay(500);
+			  LED1 = 0;
+			  vTaskDelay(2000);
+		}
+ }
+ 
+ 
